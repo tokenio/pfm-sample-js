@@ -1,0 +1,20 @@
+{
+  "name": "pf-sample",
+  "version": "1.0.0",
+  "description": "Illustrates use of token.io's Access Tokens.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tokenio/pf-sample-js.git"
+  },
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.15.4",
+    "token-io": "^1.4.105"
+  }
+}
