@@ -47,6 +47,13 @@ function initServer(member, alias) {
                 });
                 return;
             }
+            if ((!token.payload.access.resources) || (!token.payload.access.resources.length)) {
+                res.json({
+                    status: "This Access Token contains no accesses",
+                    balances: {},
+                });
+                return;
+            }
 
             var balances = new Map();
             var haveAllBalances = false;
@@ -80,24 +87,22 @@ function initServer(member, alias) {
                     
             fetchMember.useAccessToken(token.id); // from here on, we will use access token's permissions to fetch
             
+            var accountsPromise = Promise.resolve();
             if (haveAllBalances && haveAllAccounts) {
                 // Call getAccounts to find out about other
                 // accounts we can access.
-                fetchMember.getAccounts().then(function (accounts) {
+                accountsPromise = fetchMember.getAccounts().then(function (accounts) {
                     for (var i = 0; i < accounts.length; i++) {
                         console.log('getAccounts sees account: ' + JSON.stringify(accounts[i], null, 2));
                         balances.set(accounts[i].id, 0);
                     }
-                }).then(function () {
-                    getBalancesIntoResJson(fetchMember, balances, res).then(function () {
-                        fetchMember.clearAccessToken();
-                    });
-                });
-            } else {
-                getBalancesIntoResJson(fetchMember, balances, res).then(function () {
-                    fetchMember.clearAccessToken();
                 });
             }
+            accountsPromise.then(function() {
+                getBalancesIntoResJson(fetchMember, balances, res).then(function() {
+                    fetchMember.clearAccessToken();
+                });
+            });
         }, function (err) {
             res.json({
                 status: "Failed to fetch token, got " + JSON.stringify(err)

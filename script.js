@@ -1,6 +1,6 @@
 'use strict';
 var tokenId = '';
-Token.styleButton({            // Sets up the Quick Checkout button
+Token.styleButton({            // Sets up the Link with Token button
     id: "tokenAccessBtn",
     label: "Link with Token"
 }).bindAccessButton(
