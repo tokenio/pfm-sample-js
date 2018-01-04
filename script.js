@@ -1,8 +1,8 @@
 'use strict';
 var tokenId = '';
 Token.styleButton({            // Sets up the Link with Token button
-    id: "tokenAccessBtn",
-    label: "Link with Token"
+    id: 'tokenAccessBtn',
+    label: 'Link with Token'
 }).bindAccessButton(
     {
         alias: {
@@ -15,7 +15,7 @@ Token.styleButton({            // Sets up the Link with Token button
         ]
     },
     function(data) { // success, have access token
-        console.log("success callback got " + JSON.stringify(data));
+        console.log('success callback got ' + JSON.stringify(data));
         if (data.tokenId) {
             tokenId = data.tokenId;
             $('#fetch').prop('disabled', false);
@@ -32,7 +32,7 @@ function doFetch() {
         `/fetch-data`,
         {tokenId: tokenId},
         function (gotJSON) {
-            console.log("I see JSON " + JSON.stringify(gotJSON));
+            console.log('I see JSON ' + JSON.stringify(gotJSON));
             if (gotJSON.status) {
                 $('#chat').text(gotJSON.status);
             } else {
@@ -60,6 +60,6 @@ $('#fetch').click(function () {
     if (tokenId) {
         doFetch();
     } else {
-        $('#chat').text("App doesn't know your tokenId. Even if you set it up before, this app 'forgets' when you reload, sorry. Link with Token, please.");
+        $('#chat').text('App doesn\'t know your tokenId. Even if you set it up before, this app "forgets" when you reload, sorry. Link with Token, please.');
     }
 });
