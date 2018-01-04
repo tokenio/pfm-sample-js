@@ -19,28 +19,26 @@ Token.styleButton({            // Sets up the Link with Token button
         if (data.tokenId) {
             tokenId = data.tokenId;
             $('#fetch').prop('disabled', false);
-            $('#chat').text('Got access token.');
+            updateStatus('Got access token.');
         }
     },
-    function(error) { // fail, no/cancelled access token
-        console.log('Something\'s wrong!', error);
+    function(error) { // fail
+        alert('Something\'s wrong! ' + error);
     }
 );
+
 function doFetch() {
-    $('#chat').text('Fetching...');
+    updateStatus('Fetching...');
     $.getJSON(
         `/fetch-data`,
         {tokenId: tokenId},
         function (gotJSON) {
             console.log('I see JSON ' + JSON.stringify(gotJSON));
             if (gotJSON.status) {
-                $('#chat').text(gotJSON.status);
-            } else {
-                $('#chat').html(`GOT: <pre>${JSON.stringify(gotJSON, null, 2)}</pre>`);
+                updateStatus(gotJSON.status);
             }
             if (gotJSON.replacedBy) {
                 tokenId = gotJSON.replacedBy;
-                doFetch();
             }
             if (gotJSON.balances) {
                 $('#display').html('<tr><th>CURRENCY <th>AMOUNT');
@@ -56,10 +54,10 @@ function doFetch() {
         }
     );
 }
-$('#fetch').click(function () {
-    if (tokenId) {
-        doFetch();
-    } else {
-        $('#chat').text('App doesn\'t know your tokenId. Even if you set it up before, this app "forgets" when you reload, sorry. Link with Token, please.');
-    }
-});
+
+// display status text to user
+function updateStatus(s) {
+    $('#status').text(s);
+}
+
+$('#fetch').click(doFetch);

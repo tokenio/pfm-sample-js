@@ -33,7 +33,6 @@ function initServer(member, alias) {
         // We set state on the member we use to fetch balances,
         // applying and later clearing an access token.
         // Rather than set this state on a global, use a copy here.
-        const fetchMember = Token.getMember(Token.UnsecuredFileCryptoEngine, member.memberId());
         if ((!req) || (!req.query) || (!req.query.tokenId)) {
             res.json({
                 status: 'I don\'t see an access token Id? Click Link with Token to set that up.',
@@ -42,6 +41,7 @@ function initServer(member, alias) {
         }
         console.log(`Using tokenId=${req.query.tokenId}`);
 
+        const fetchMember = Token.getMember(Token.UnsecuredFileCryptoEngine, member.memberId());
         fetchMember.getToken(req.query.tokenId).then( function(token) {
             console.log('got access token: ' + JSON.stringify(token, null, 2));
 
@@ -67,6 +67,18 @@ function initServer(member, alias) {
                 return;
             }
 
+            // Find out which accounts' balances we have access to,
+            // then get those balances.
+            // We initially asked for an access token with resources:
+            //   allBalances: get balance for any account we know of
+            //   allAccounts: get a list of accounts
+            // If we have those , our logic is straightforward:
+            // get a list of accounts, then for each get the balance.
+            // But the user might have granted narrower resources.
+            // Look at the token's resources. If we have allBalances
+            // or allAccounts, remember to use them later. If we have
+            // permission to get the balance of specific accounts,
+            // remember the account ids in balances structure.
             var balances = new Map();
             var haveAllBalances = false;
             var haveAllAccounts = false;
@@ -82,33 +94,11 @@ function initServer(member, alias) {
                     haveAllAccounts = true;
                 }
             }
-            // If resources has an allBalances, then check for existence of other account ids
-            // in fields like, e.g. { account: { accountId: "a:1234:567" }} .
-
-            // TODO This is only useful if access token has "silly" permissions:
-            //      has allBalances but not allAccounts.
-            //
-            //      It doesn't event find all balances, only those whose account ids
-            //      are mentioned in the token.
-            //
-            //      Not sure if it's worth it to include this.
-            if (haveAllBalances) {
-                for (var i = 0; i < token.payload.access.resources.length; i++) {
-                    const resource = token.payload.access.resources[i];
-                    for (var field in resource) {
-                        if (resource[field].accountId) {
-                            balances.set(resource[field].accountId, 0);
-                        }
-                    }
-                }
-            }
-                    
             fetchMember.useAccessToken(token.id); // use access token's permissions from now on
             
             var accountsPromise = Promise.resolve();
             if (haveAllBalances && haveAllAccounts) {
-                // Call getAccounts to find out about other
-                // accounts we can access.
+                // Call getAccounts to fetch list of accounts we can access.
                 accountsPromise = fetchMember.getAccounts().then(function (accounts) {
                     for (var i = 0; i < accounts.length; i++) {
                         console.log('getAccounts sees account: ' +
