@@ -4,13 +4,11 @@ var express = require('express')
 const fs = require('fs')
 var app = express()
 
- // Connect to Token's development sandbox
+// Connect to Token's development sandbox
 var TokenLib = require('token-io/dist/token-io.node.js');
 var Token = new TokenLib('sandbox', '4qY7lqQw8NOl9gng0ZHgT4xdiDqxqoGVutuZwrUYQsI','./keys');
 
 // Server's member (Token account)
-// When a customer grants this app access, they create an Access Token
-// that lets the server's member to see the customer member's info.
 var accessMember;
 
 function initServer(member, alias) {
@@ -33,52 +31,15 @@ function initServer(member, alias) {
         // We set state on the member we use to fetch balances,
         // applying and later clearing an access token.
         // Rather than set this state on a global, use a copy here.
-        if ((!req) || (!req.query) || (!req.query.tokenId)) {
-            res.json({
-                status: 'I don\'t see an access token Id? Click Link with Token to set that up.',
-            });
-            return;
-        }
-        console.log(`Using tokenId=${req.query.tokenId}`);
-
         const fetchMember = Token.getMember(Token.UnsecuredFileCryptoEngine, member.memberId());
         fetchMember.getToken(req.query.tokenId).then( function(token) {
-            console.log('got access token: ' + JSON.stringify(token, null, 2));
-
-            // If our locally-stored token has been replaced by a newer access token,
-            // report it. In a real program, it makes more sense to store the
-            // new token and silently fetch it. This demo isn't silent; it assumes the
-            // user is learning the "flow" and wants to know about replacements.
             if (token.replacedByTokenId) {
                 res.json({
-                    status: 'I had a token but it was replaced. I\'ll use the new one next time.',
                     replacedBy: token.replacedByTokenId,
                 });
                 return;
             }
 
-            // If the access token doesn't grant access to anything,
-            // that's a little strange; report it.
-            if ((!token.payload.access.resources) || (!token.payload.access.resources.length)) {
-                res.json({
-                    status: 'This Access Token contains no accesses',
-                    balances: {},
-                });
-                return;
-            }
-
-            // Find out which accounts' balances we have access to,
-            // then get those balances.
-            // We initially asked for an access token with resources:
-            //   allBalances: get balance for any account we know of
-            //   allAccounts: get a list of accounts
-            // If we have those , our logic is straightforward:
-            // get a list of accounts, then for each get the balance.
-            // But the user might have granted narrower resources.
-            // Look at the token's resources. If we have allBalances
-            // or allAccounts, remember to use them later. If we have
-            // permission to get the balance of specific accounts,
-            // remember the account ids in balances structure.
             var balances = new Map();
             var haveAllBalances = false;
             var haveAllAccounts = false;
@@ -101,8 +62,6 @@ function initServer(member, alias) {
                 // Call getAccounts to fetch list of accounts we can access.
                 accountsPromise = fetchMember.getAccounts().then(function (accounts) {
                     for (var i = 0; i < accounts.length; i++) {
-                        console.log('getAccounts sees account: ' +
-                                    JSON.stringify(accounts[i], null, 2));
                         balances.set(accounts[i].id, 0);
                     }
                 });
@@ -111,10 +70,6 @@ function initServer(member, alias) {
                 getBalancesIntoResJson(fetchMember, balances, res).then(function() {
                     fetchMember.clearAccessToken(); // stop using access token's permissions
                 });
-            });
-        }, function (err) {
-            res.json({
-                status: 'Failed to fetch token, got ' + JSON.stringify(err)
             });
         });
     });
@@ -132,17 +87,6 @@ function getBalancesIntoResJson(member, balancesMap, res) {
             function(balance) {
                 balancesMap.set(id, balance.available);
             } , function(err) {
-                console.log('saw error fetching balance: ' + err);
-
-                // One reason it maybe couldn't fetch: the access token
-                // might list an account that the user has deleted. This gets
-                // status code 400. Reason: FAILED_PRECONDITION: Account ... is not active
-
-                // TODO Maybe I should check for this and handle it special?
-                //      If I were writing a real-world app, I'd skip this account
-                //      instead of showing an error. I think showing the error case
-                //      is useful so folks know it can happen... but maybe showing
-                //      the RAW error isn't so great.
                 balancesMap.set(id, { err: 'couldn\'t fetch: ' + err });
             } );
         balancePromises.push(awaitBalance);
@@ -169,8 +113,8 @@ try {
 } catch (x) {
     keyPaths = [];
 }
-for (var i = 0; i < keyPaths.length; i++) {
-    const keyPath = keyPaths[i];
+if (keyPaths && keyPaths.length) {
+    const keyPath = keyPaths[0];
     const mid = keyPath.replace(/_/g, ':');
     accessMember = Token.getMember(Token.UnsecuredFileCryptoEngine, mid);
 }
@@ -183,7 +127,7 @@ if (accessMember) {
         initServer(accessMember, alias);
     }, function (err) {
         console.log('Something went wrong loading access member: ' + err);
-        console.log('If member ID not found, `rm -r ./keys` and try again.');
+        console.log('If member ID not found or firstAlias fails, `rm -r ./keys` and try again.');
     });
 } else {
     // Didn't find an existing access member. Create a new one.

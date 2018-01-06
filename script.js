@@ -39,6 +39,8 @@ function doFetch() {
             }
             if (gotJSON.replacedBy) {
                 tokenId = gotJSON.replacedBy;
+                doFetch();
+                return;
             }
             if (gotJSON.balances) {
                 $('#display').html('<tr><th>CURRENCY <th>AMOUNT');
