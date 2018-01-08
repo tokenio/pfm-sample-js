@@ -26,44 +26,17 @@ function initServer(memberId, alias) {
 
     app.get('/fetch-data', function (req, res) {
         // "log in" as service member.
-        const fetchMember = Token.getMember(Token.UnsecuredFileCryptoEngine, memberId);
-        fetchMember.getToken(req.query.tokenId).then( function(token) {
-            if (token.replacedByTokenId) {
-                res.json({
-                    replacedBy: token.replacedByTokenId,
-                });
-                return;
-            }
-
-            fetchMember.useAccessToken(token.id); // use access token's permissions from now on
-            var haveAllBalances = false;
-            var haveAllAccounts = false;
-            for (var i = 0; i < token.payload.access.resources.length; i++) {
-                const resource = token.payload.access.resources[i];
-                if (resource.balance && resource.balance.accountId) {
-                    fetchMember.getBalance(resource.balance.accountId).then(function (b) {
+        const member = Token.getMember(Token.UnsecuredFileCryptoEngine, memberId);
+        member.getToken(req.query.tokenId).then( function(token) {
+            member.useAccessToken(token.id); // use access token's permissions from now on
+            member.getAccounts().then(function (accounts) {
+                for (var i = 0; i < accounts.length; i++) {
+                    member.getBalance(accounts[i].id).then(function (b) {
                         console.log("ACCT: ", b.available);
-                    }); 
+                    });
                 }
-                if (resource.allBalances) {
-                    haveAllBalances = true;
-                }
-                if (resource.allAccounts) {
-                    haveAllAccounts = true;
-                }
-            }
-            
-            if (haveAllBalances && haveAllAccounts) {
-                // Call getAccounts to fetch list of accounts we can access.
-                fetchMember.getAccounts().then(function (accounts) {
-                    for (var i = 0; i < accounts.length; i++) {
-                        fetchMember.getBalance(accounts[i].id).then(function (b) {
-                            console.log("ACCT: ", b.available);
-                        });
-                    }
-                });
-            }
-            res.json({});
+            });
+            res.send("fetching...");
         });
     });
     app.listen(3000, function () {
@@ -73,7 +46,7 @@ function initServer(memberId, alias) {
 
 // If we know of a previously-created access member, load it; else create a new one.
 function initMember() {
-    var accessMember; // Server's member (Token account)
+    var member; // Server's member (Token account)
 
     // Token SDK stores member keys in files in ./keys.
     // If access member's ID is "m:1234:567", its key file is "m_1234_567".
@@ -82,17 +55,17 @@ function initMember() {
         if (keyPaths && keyPaths.length) {
             const keyPath = keyPaths[0];
             const mid = keyPath.replace(/_/g, ':');
-            accessMember = Token.getMember(Token.UnsecuredFileCryptoEngine, mid);
+            member = Token.getMember(Token.UnsecuredFileCryptoEngine, mid);
         }
     } catch (x) { // if "./keys" doesn't exist, fs.feaddirSync throws
     }
 
     // If member is defined, that means we found keys and loaded them.
-    if (accessMember) {
+    if (member) {
         // We're using an existing access member. Fetch its alias (email address)
-        accessMember.firstAlias().then(function (alias) {
+        member.firstAlias().then(function (alias) {
             // launch server
-            initServer(accessMember.memberId(), alias);
+            initServer(member.memberId(), alias);
         }, function (err) {
             console.log('Something went wrong loading access member: ' + err);
             console.log('If member ID not found or firstAlias fails, `rm -r ./keys` and try again.');

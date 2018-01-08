@@ -18,26 +18,10 @@ Token.styleButton({            // Sets up the Link with Token button
         console.log('success callback got ' + JSON.stringify(data));
         if (data.tokenId) {
             tokenId = data.tokenId;
-            $('#fetch').prop('disabled', false);
+            $.get(`/fetch-data`, {tokenId: tokenId}); // pass token id to server code
         }
     },
     function(error) { // fail
         alert('Something\'s wrong! ' + error);
     }
 );
-
-function doFetch() {
-    $.getJSON(
-        `/fetch-data`,
-        {tokenId: tokenId},
-        function (gotJSON) {
-            if (gotJSON.replacedBy) {
-                tokenId = gotJSON.replacedBy;
-                doFetch();
-                return;
-            }
-        }
-    );
-}
-
-$('#fetch').click(doFetch);
