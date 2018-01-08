@@ -19,7 +19,6 @@ Token.styleButton({            // Sets up the Link with Token button
         if (data.tokenId) {
             tokenId = data.tokenId;
             $('#fetch').prop('disabled', false);
-            updateStatus('Got access token.');
         }
     },
     function(error) { // fail
@@ -28,38 +27,17 @@ Token.styleButton({            // Sets up the Link with Token button
 );
 
 function doFetch() {
-    updateStatus('Fetching...');
     $.getJSON(
         `/fetch-data`,
         {tokenId: tokenId},
         function (gotJSON) {
-            console.log('I see JSON ' + JSON.stringify(gotJSON));
-            if (gotJSON.status) {
-                updateStatus(gotJSON.status);
-            }
             if (gotJSON.replacedBy) {
                 tokenId = gotJSON.replacedBy;
                 doFetch();
                 return;
             }
-            if (gotJSON.balances) {
-                $('#display').html('<tr><th>CURRENCY <th>AMOUNT');
-                for (var acctId in gotJSON.balances) {
-                    const bal = gotJSON.balances[acctId];
-                    if (bal.err) {
-                        $('#display').append(`<tr><td colspan=2>${bal.err}</tr>`);
-                    } else {
-                        $('#display').append(`<tr><td>${bal.currency} <td>${bal.value} </tr>`);
-                    }
-                }
-            }
         }
     );
-}
-
-// display status text to user
-function updateStatus(s) {
-    $('#status').text(s);
 }
 
 $('#fetch').click(doFetch);
