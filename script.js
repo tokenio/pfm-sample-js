@@ -17,7 +17,19 @@ Token.styleButton({            // Sets up the Link with Token button
     function(data) { // success, have access token
         console.log('success callback got ' + JSON.stringify(data));
         if (data.tokenId) {
-            $.post('/use-access-token', {tokenId: data.tokenId}); // pass token id to server.js code
+            $.get(
+                '/fetch-balances',
+                {tokenId: data.tokenId},
+                function (balancesJSON) {
+                    $('#balances').empty();
+                    if (balancesJSON.balances) {
+                        for (var accountId in balancesJSON.balances) {
+                            const balance = balancesJSON.balances[accountId];
+                            $('#balances').append(`<p>${balance.currency}: ${balance.value}`);
+                        }
+                    }
+                }
+            );
         }
     },
     function(error) { // fail

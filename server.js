@@ -4,14 +4,15 @@ var express = require('express')
 const fs = require('fs')
 var app = express()
 
-// Connect to Token's development sandbox
 var TokenLib = require('token-io/dist/token-io.node.js');
+// 'sandbox': Connect to Sandbox testing environment
+// '4qY7...': Developer key
 var Token = new TokenLib('sandbox', '4qY7lqQw8NOl9gng0ZHgT4xdiDqxqoGVutuZwrUYQsI');
 
 async function initServer() {
     // Create a Member (Token user account). A "real world" server would
-    // use same member instead of creating one each time; this demo creates a
-    // a new member each run for easier demos/testing:
+    // use the same member instead of creating a new one for each run;
+    // this demo creates a a new member for easier demos/testing.
     const alias = {
         // An alias is a human-readable way to identify a member, e.g., an email address.
         // When we tell Token UI to request an Access Token, we use this address.
@@ -42,15 +43,17 @@ async function initServer() {
         })
     });
 
-    app.get('/use-access-token', async function (req, res) {
+    app.get('/fetch-balances', async function (req, res) {
         // "log in" as service member.
         const member = Token.getMember(Token.MemoryCryptoEngine, memberId);
+        var balances = {};
         member.useAccessToken(req.query.tokenId); // use access token's permissions from now on
-        const accounts = await member.getAccounts();
-        for (var i = 0; i < accounts.length; i++) {
-            const balance = await member.getBalance(accounts[i].id);
-            console.log("ACCT: ", balance.available);
+        const accounts = await member.getAccounts(); // get list of accounts
+        for (var i = 0; i < accounts.length; i++) { // for each account...
+            const balance = await member.getBalance(accounts[i].id); // ...get its balance
+            balances[accounts[i].id] = balance.available;
         }
+        res.json({balances: balances}); // respond to script.js with balances
     });
     app.listen(3000, function () {
         console.log('Example app listening on port 3000!')
