@@ -37,7 +37,7 @@ async function initServer() {
         // "log in" as service member.
         const member = Token.getMember(Token.MemoryCryptoEngine, memberId);
         member.useAccessToken(req.query.tokenId); // use access token's permissions from now on
-        const accounts = member.getAccounts();
+        const accounts = await member.getAccounts();
         for (var i = 0; i < accounts.length; i++) {
             const balance = await member.getBalance(accounts[i].id);
             console.log("ACCT: ", balance.available);
