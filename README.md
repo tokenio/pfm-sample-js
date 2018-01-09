@@ -1,4 +1,4 @@
-# pf-sample-js
+# pfm-sample-js
 
 Simple personal finance app that illustrates Token.io's Access Tokens
 
