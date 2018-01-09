@@ -9,12 +9,21 @@ var TokenLib = require('token-io/dist/token-io.node.js');
 var Token = new TokenLib('sandbox', '4qY7lqQw8NOl9gng0ZHgT4xdiDqxqoGVutuZwrUYQsI');
 
 async function initServer() {
+    // Create a Member (Token user account). A "real world" server would
+    // use same member instead of creating one each time; this demo creates a
+    // a new member each run for easier demos/testing:
     const alias = {
+        // An alias is a human-readable way to identify a member, e.g., an email address.
+        // When we tell Token UI to request an Access Token, we use this address.
+        // Normally, aliases are verified; in test environments like Sandbox, email addresses
+        // that contain "+noverify" are automatically verified.
         type: 'EMAIL',
         value: 'asjs-' + Math.random().toString(36).substring(2, 10) + '+noverify@example.com'
     };
     const m = await Token.createMember(alias, Token.MemoryCryptoEngine);
     m.setProfile({
+        // A member's profile has a display name and picture.
+        // The Token UI shows this (and the alias) to the user when requesting access.
         displayNameFirst: 'Info Demo'
     });
     const memberId = m.memberId();
@@ -33,7 +42,7 @@ async function initServer() {
         })
     });
 
-    app.get('/fetch-data', async function (req, res) {
+    app.get('/use-access-token', async function (req, res) {
         // "log in" as service member.
         const member = Token.getMember(Token.MemoryCryptoEngine, memberId);
         member.useAccessToken(req.query.tokenId); // use access token's permissions from now on

@@ -1,5 +1,5 @@
 'use strict';
-var tokenId = '';
+// Here, "Token" comes from https://web-app.sandbox.token.io/token.js :
 Token.styleButton({            // Sets up the Link with Token button
     id: 'tokenAccessBtn',
     label: 'Link with Token'
@@ -17,8 +17,7 @@ Token.styleButton({            // Sets up the Link with Token button
     function(data) { // success, have access token
         console.log('success callback got ' + JSON.stringify(data));
         if (data.tokenId) {
-            tokenId = data.tokenId;
-            $.get(`/fetch-data`, {tokenId: tokenId}); // pass token id to server.js code
+            $.post('/use-access-token', {tokenId: data.tokenId}); // pass token id to server.js code
         }
     },
     function(error) { // fail
