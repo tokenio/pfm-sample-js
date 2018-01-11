@@ -7,7 +7,7 @@ Token.styleButton({            // Sets up the Link with Token button
     {
         alias: {
             type: 'EMAIL',
-            value: '{alias}'        // address filled in by server.js
+            value: '{alias}'        // address filled in by server
         },
         resources: [ // the button asks for permission to:
             { type: Token.RESOURCE_TYPE_ALL_ACCOUNTS }, // get list of accounts
@@ -17,7 +17,7 @@ Token.styleButton({            // Sets up the Link with Token button
     function(data) { // success, have access token
         console.log('success callback got ' + JSON.stringify(data));
         if (data.tokenId) {
-            $.get(
+            $.getJSON(
                 '/fetch-balances',
                 {tokenId: data.tokenId},
                 function (balancesJSON) {
