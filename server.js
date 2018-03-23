@@ -48,7 +48,7 @@ async function initServer() {
         const member = Token.getMember(Token.MemoryCryptoEngine, memberId);
         var balances = {};
 
-	    var token = await member.getToken(req.query.tokenId);
+	var token = await member.getToken(req.query.tokenId);
         
         const accountIds = Array.from(new Set(token.payload.access.resources
             .filter((resource) => resource.account !== undefined)
