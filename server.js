@@ -47,10 +47,21 @@ async function initServer() {
         // "log in" as service member.
         const member = Token.getMember(Token.MemoryCryptoEngine, memberId);
         var balances = {};
+
+	    var token = await member.getToken(req.query.tokenId);
+        
+        const accountIds = Array.from(new Set(token.payload.access.resources
+            .filter((resource) => resource.account !== undefined)
+            .map((resource) => resource.account.accountId)));
+            
         member.useAccessToken(req.query.tokenId); // use access token's permissions from now on
-        const accounts = await member.getAccounts(); // get list of accounts
+        const accounts = accountIds.length
+            ? await Promise.all(accountIds
+                .map(async (accId) => await member.getAccount(accId)))
+            : await member.getAccounts(); 
+
         for (var i = 0; i < accounts.length; i++) { // for each account...
-            const balance = await member.getBalance(accounts[i].id); // ...get its balance
+            const balance = (await member.getBalance(accounts[i].id, Token.KeyLevel.LOW)).balance; // ...get its balance
             balances[accounts[i].id] = balance.available;
         }
         res.json({balances: balances}); // respond to script.js with balances
