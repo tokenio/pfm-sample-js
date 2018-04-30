@@ -1,6 +1,6 @@
 {
   "name": "pfm-sample",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Illustrates use of token.io's bindAccessButton API",
   "repository": {
     "type": "git",
@@ -15,6 +15,6 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.15.4",
-    "token-io": "^1.4.117"
+    "token-io": "^1.4.133"
   }
 }
