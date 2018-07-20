@@ -41,7 +41,7 @@ async function initServer() {
         })
     });
 
-    app.get('/request-balances', async function (req, res) {
+    app.post('/request-balances', async function (req, res) {
         const member = Token.getMember(Token.MemoryCryptoEngine, memberId);
 
         // set up the AccessTokenBuilder
@@ -66,7 +66,6 @@ async function initServer() {
         var balances = {};
 
 	    var token = await member.getToken(req.query.tokenId);
-        
         const accountIds = Array.from(new Set(token.payload.access.resources
             .filter((resource) => resource.account !== undefined)
             .map((resource) => resource.account.accountId)));
@@ -81,6 +80,9 @@ async function initServer() {
             const balance = (await member.getBalance(accounts[i].id, Token.KeyLevel.LOW)).balance; // ...get its balance
             balances[accounts[i].id] = balance.available;
         }
+
+        member.clearAccessToken();
+
         res.json({balances: balances}); // respond to script.js with balances
     });
     app.use(express.static(__dirname));
