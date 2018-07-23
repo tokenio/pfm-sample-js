@@ -46,7 +46,8 @@ async function initServer() {
 
         // set up the AccessTokenBuilder
         const tokenBuilder = member.createAccessTokenBuilder()
-            .forAll()
+            .forAllAccounts()
+            .forAllBalances()
             .setToAlias(alias)
             .setToMemberId(memberId);
         // set up the TokenRequest
