@@ -18,10 +18,11 @@ async function initServer() {
         // When we tell Token UI to request an Access Token, we use this address.
         // If a domain alias is used instead of an email, please contact Token
         // with the domain and member ID for verification.
+        // See https://developer.token.io/sdk/#aliases for more information.
         type: 'EMAIL',
         value: 'asjs-' + Math.random().toString(36).substring(2, 10) + '+noverify@example.com'
     };
-    const m = await Token.createMember(alias, Token.MemoryCryptoEngine);
+    const m = await Token.createBusinessMember(alias, Token.MemoryCryptoEngine);
     m.setProfile({
         // A member's profile has a display name and picture.
         // The Token UI shows this (and the alias) to the user when requesting access.
