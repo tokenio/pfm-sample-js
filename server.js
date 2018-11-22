@@ -9,7 +9,6 @@ var app = express();
 // See https://github.com/tokenio/sdk-js for details
 var TokenIO = require('token-io').TokenIO; // main Token SDK entry object
 var Alias = require('token-io').Alias; // Token alias constructor
-var TransferEndpoint = require('token-io').TransferEndpoint; // Token transfer endpoint constructor
 var Profile = require('token-io').Profile; // Token member profile constructor
 
 // 'sandbox': Connect to Sandbox testing environment
