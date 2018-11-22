@@ -1,19 +1,26 @@
 'use strict';
 
-var express = require('express')
-const fs = require('fs')
-var app = express()
+var express = require('express');
+const fs = require('fs');
+var app = express();
 
-var TokenLib = require('token-io/dist/token-io.node.js');
+// It is strongly recommended that you use ES6 destructuring to require these objects (or ES6 named imports)
+// They are written here in ES5 for maximum browser compatibility since we do not transpile this code sample
+// See https://github.com/tokenio/sdk-js for details
+var TokenIO = require('token-io').TokenIO; // main Token SDK entry object
+var Alias = require('token-io').Alias; // Token alias constructor
+var TransferEndpoint = require('token-io').TransferEndpoint; // Token transfer endpoint constructor
+var Profile = require('token-io').Profile; // Token member profile constructor
+
 // 'sandbox': Connect to Sandbox testing environment
 // '4qY7...': Developer key
-var Token = new TokenLib('sandbox', '4qY7lqQw8NOl9gng0ZHgT4xdiDqxqoGVutuZwrUYQsI');
+var Token = new TokenIO({env: 'sandbox', developerKey: '4qY7lqQw8NOl9gng0ZHgT4xdiDqxqoGVutuZwrUYQsI'});
 
 async function initServer() {
     // Create a Member (Token user account). A "real world" server would
     // use the same member instead of creating a new one for each run;
     // this demo creates a a new member for easier demos/testing.
-    const alias = {
+    const alias = Alias.create({
         // An alias is a human-readable way to identify a member, e.g., an email address or domain.
         // When we tell Token UI to request an Access Token, we use this address.
         // If a domain alias is used instead of an email, please contact Token
@@ -21,13 +28,13 @@ async function initServer() {
         // See https://developer.token.io/sdk/#aliases for more information.
         type: 'EMAIL',
         value: 'asjs-' + Math.random().toString(36).substring(2, 10) + '+noverify@example.com'
-    };
+    });
     const m = await Token.createBusinessMember(alias, Token.MemoryCryptoEngine);
-    m.setProfile({
+    m.setProfile(Profile.create({
         // A member's profile has a display name and picture.
         // The Token UI shows this (and the alias) to the user when requesting access.
         displayNameFirst: 'Info Demo'
-    });
+    }));
     const memberId = m.memberId();
 
     // Returns HTML file
@@ -71,7 +78,7 @@ async function initServer() {
 
 	    var token = await member.getToken(req.query.tokenId);
         const accountIds = Array.from(new Set(token.payload.access.resources
-            .filter((resource) => resource.account !== undefined)
+            .filter((resource) => !!resource.account)
             .map((resource) => resource.account.accountId)));
             
         member.useAccessToken(req.query.tokenId); // use access token's permissions from now on
