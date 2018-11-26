@@ -15,6 +15,6 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.15.4",
-    "token-io": "^1.5.17"
+    "token-io": "^2.0.0"
   }
 }
