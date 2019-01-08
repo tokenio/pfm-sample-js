@@ -61,7 +61,7 @@ async function initServer() {
             .setToMemberId(memberId);
         // set up the TokenRequest
         const tokenRequest = Token.TokenRequest.create(tokenBuilder.build())
-                .setRedirectUrl('http://localhost:3002/fetch-balances');
+                .setRedirectUrl('http://localhost:3000/fetch-balances');
         // store the token request
         member.storeTokenRequest(tokenRequest).then(function(request) {
             const requestId = request.id;
