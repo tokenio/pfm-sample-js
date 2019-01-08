@@ -96,7 +96,7 @@ function getTokenRequestUrl(done) {
     var XHR = new XMLHttpRequest();
 
     //set up the access request
-    XHR.open("POST", "http://localhost:3000/request-balances", true);
+    XHR.open("POST", "http://localhost:3002/request-balances", true);
 
     XHR.setRequestHeader("Content-Type", "application/json; charset=utf-8");
 
