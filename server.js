@@ -73,7 +73,7 @@ async function initServer() {
     app.get('/fetch-balances', async function (req, res) {
         // "log in" as service member.
         const member = Token.getMember(Token.MemoryCryptoEngine, memberId);
-        var balances = {};
+        var output = {balances: []};
 
 	    var token = await member.getToken(req.query.tokenId);
         const accountIds = Array.from(new Set(token.payload.access.resources
@@ -88,12 +88,12 @@ async function initServer() {
 
         for (var i = 0; i < accounts.length; i++) { // for each account...
             const balance = (await member.getBalance(accounts[i].id, Token.KeyLevel.LOW)).balance; // ...get its balance
-            balances[accounts[i].id] = balance.available;
+            output.balances.push(balance.available);
         }
 
         member.clearAccessToken();
 
-        res.json({balances: balances}); // respond to script.js with balances
+        res.send(JSON.stringify(output)); // respond to script.js with balances
     });
     app.use(express.static(__dirname));
     app.listen(3000, function () {
