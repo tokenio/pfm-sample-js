@@ -79,9 +79,10 @@ function createPopupButton() {
 
     // setup onSuccess callback
     tokenController.onSuccess(function(data) { // Success Callback
-        // build success URL
+        // ideally you should POST 'data' to your endpoint, but for simplicity's sake
+        // we are simply putting it in the URL
         var successURL = "/fetch-balances"
-            + "?tokenId=" + window.encodeURIComponent(data.tokenId);
+            + "?data=" + window.encodeURIComponent(JSON.stringify(data));
         // navigate to success URL
         window.location.assign(successURL);
     });
@@ -100,18 +101,14 @@ function getTokenRequestUrl(done) {
 
     XHR.setRequestHeader("Content-Type", "application/json; charset=utf-8");
 
-    var data = $.param({
-        resources: [ // the button asks for permission to:
-            { type: Token.RESOURCE_TYPE_ALL_ACCOUNTS }, // get list of accounts
-            { type: Token.RESOURCE_TYPE_ALL_BALANCES }, // get balance of each account
-        ]
-    });
+    // resource types to request
+    var data = JSON.stringify({resources: ['ACCOUNTS', 'BALANCES']});
 
     // Define what happens on successful data submission
     XHR.addEventListener("load", function(event) {
         // execute callback once response is received
         if (event.target.status === 200) {
-            done(event.target.responseURL);
+            done(event.target.response);
         }
     });
 
