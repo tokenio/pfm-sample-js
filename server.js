@@ -1,25 +1,30 @@
 'use strict';
 
 var express = require('express');
-const fs = require('fs');
+var fs = require('fs');
+var cookieSession = require('cookie-session');
 var app = express();
+var bodyParser = require('body-parser');
+var urlencodedParser = bodyParser.json({ extended: false });
 
-// It is strongly recommended that you use ES6 destructuring to require these objects (or ES6 named imports)
-// They are written here in ES5 for maximum browser compatibility since we do not transpile this code sample
-// See https://github.com/tokenio/sdk-js for details
-var TokenIO = require('token-io').TokenIO; // main Token SDK entry object
-var Alias = require('token-io').Alias; // Token alias constructor
-var Profile = require('token-io').Profile; // Token member profile constructor
+var {TokenClient} = require('@token-io/tpp'); // main Token SDK entry object
 
 // 'sandbox': Connect to Sandbox testing environment
 // '4qY7...': Developer key
-var Token = new TokenIO({env: 'sandbox', developerKey: '4qY7lqQw8NOl9gng0ZHgT4xdiDqxqoGVutuZwrUYQsI'});
+var Token = new TokenClient({env: 'sandbox', developerKey: '4qY7lqQw8NOl9gng0ZHgT4xdiDqxqoGVutuZwrUYQsI'});
 
 async function initServer() {
+    app.use(cookieSession({
+        name: 'session',
+        keys: ['cookieSessionKey'],
+        // Cookie Options
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    }));
+
     // Create a Member (Token user account). A "real world" server would
     // use the same member instead of creating a new one for each run;
     // this demo creates a a new member for easier demos/testing.
-    const alias = Alias.create({
+    var alias = {
         // An alias is a human-readable way to identify a member, e.g., an email address or domain.
         // When we tell Token UI to request an Access Token, we use this address.
         // If a domain alias is used instead of an email, please contact Token
@@ -27,14 +32,16 @@ async function initServer() {
         // See https://developer.token.io/sdk/#aliases for more information.
         type: 'EMAIL',
         value: 'asjs-' + Math.random().toString(36).substring(2, 10) + '+noverify@example.com'
-    });
-    const m = await Token.createBusinessMember(alias, Token.MemoryCryptoEngine);
-    m.setProfile(Profile.create({
+    };
+    var m = await Token.createMember(alias, Token.MemoryCryptoEngine);
+    await m.setProfile({
         // A member's profile has a display name and picture.
         // The Token UI shows this (and the alias) to the user when requesting access.
-        displayNameFirst: 'Info Demo'
-    }));
-    const memberId = m.memberId();
+        displayNameFirst: 'Demo Data Aggregator',
+    });
+    // empty placeholder image
+    await m.setProfilePicture('img/gif', 'R0lGODlhAQABAIABAP///wAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==');
+    var memberId = m.memberId();
 
     // Returns HTML file
     app.get('/', function (req, res) {
@@ -43,58 +50,71 @@ async function initServer() {
             res.send(contents);
         })
     });
-    // Returns JS file with {alias} replaced by accessMember's email address
+    // Returns client-side JS file
     app.get('/script.js', function (req, res) {
         fs.readFile('script.js', 'utf8', function (err, contents) {
-            res.send(contents.replace(/{alias}/g, alias.value));
+            res.send(contents);
         })
     });
 
-    app.post('/request-balances', async function (req, res) {
-        const member = Token.getMember(Token.MemoryCryptoEngine, memberId);
+    app.post('/request-balances', urlencodedParser, async function (req, res) {
+        var member = Token.getMember(Token.MemoryCryptoEngine, memberId);
+        var nonce = Token.Util.generateNonce();
+        req.session.nonce = nonce;
 
-        // set up the AccessTokenBuilder
-        const tokenBuilder = member.createAccessTokenBuilder()
-            .forAllAccounts()
-            .forAllBalances()
+        // set up the AccessTokenRequest
+        var tokenRequest = Token.createAccessTokenRequest(req.body.resources)
             .setToAlias(alias)
-            .setToMemberId(memberId);
-        // set up the TokenRequest
-        const tokenRequest = Token.TokenRequest.create(tokenBuilder.build())
-                .setRedirectUrl('http://localhost:3000/fetch-balances');
+            .setToMemberId(memberId)
+            .setRedirectUrl('http://localhost:3000/fetch-balances-redirect')
+            .setCSRFToken(nonce);
         // store the token request
         member.storeTokenRequest(tokenRequest).then(function(request) {
-            const requestId = request.id;
-            const redirectUrl = Token.generateTokenRequestUrl(requestId);
-            res.redirect(302, redirectUrl);
+            var requestId = request.id;
+            var redirectUrl = Token.generateTokenRequestUrl(requestId);
+            res.status(200).send(redirectUrl);
         });
     });
 
+    // for popup flow, use Token.parseTokenRequestCallbackParams()
     app.get('/fetch-balances', async function (req, res) {
+        // verifies signature and CSRF token
+        var result = await Token.parseTokenRequestCallbackParams(JSON.parse(req.query.data), req.session.nonce);
         // "log in" as service member.
-        const member = Token.getMember(Token.MemoryCryptoEngine, memberId);
+        var member = Token.getMember(Token.MemoryCryptoEngine, memberId);
+        // get a Representable member object to use the access token
+        var rep = member.forAccessToken(result.tokenId);
+        var accounts = await rep.getAccounts();
+
         var output = {balances: []};
-
-	    var token = await member.getToken(req.query.tokenId);
-        const accountIds = Array.from(new Set(token.payload.access.resources
-            .filter((resource) => !!resource.account)
-            .map((resource) => resource.account.accountId)));
-            
-        member.useAccessToken(req.query.tokenId); // use access token's permissions from now on
-        const accounts = accountIds.length
-            ? await Promise.all(accountIds
-                .map(async (accId) => await member.getAccount(accId)))
-            : await member.getAccounts(); 
-
         for (var i = 0; i < accounts.length; i++) { // for each account...
-            const balance = (await member.getBalance(accounts[i].id, Token.KeyLevel.LOW)).balance; // ...get its balance
+            var balance = (await rep.getBalance(accounts[i].id(), Token.KeyLevel.LOW)); // ...get its balance
             output.balances.push(balance.available);
         }
 
-        member.clearAccessToken();
+        res.send(JSON.stringify(output)); // respond to script.js with balances
+    });
+
+    // for redirect flow, use Token.parseTokenRequestCallbackUrl()
+    app.get('/fetch-balances-redirect', async function (req, res) {
+        var callbackUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+        // verifies signature and CSRF token
+        var result = await Token.parseTokenRequestCallbackUrl(callbackUrl, req.session.nonce);
+        // "log in" as service member.
+        var member = Token.getMember(Token.MemoryCryptoEngine, memberId);
+        // get a Representable member object to use the access token
+        var rep = member.forAccessToken(result.tokenId);
+        var accounts = await rep.getAccounts();
+
+        var output = {balances: []};
+        for (var i = 0; i < accounts.length; i++) { // for each account...
+            var balance = (await rep.getBalance(accounts[i].id(), Token.KeyLevel.LOW)); // ...get its balance
+            output.balances.push(balance.available);
+        }
 
         res.send(JSON.stringify(output)); // respond to script.js with balances
     });
+
     app.use(express.static(__dirname));
     app.listen(3000, function () {
         console.log('Example app listening on port 3000!')
