@@ -34,11 +34,13 @@ async function initServer() {
         value: 'asjs-' + Math.random().toString(36).substring(2, 10) + '+noverify@example.com'
     };
     var m = await Token.createMember(alias, Token.MemoryCryptoEngine);
-    m.setProfile({
+    await m.setProfile({
         // A member's profile has a display name and picture.
         // The Token UI shows this (and the alias) to the user when requesting access.
-        displayNameFirst: 'Info Demo'
+        displayNameFirst: 'Demo Data Aggregator',
     });
+    // empty placeholder image
+    await m.setProfilePicture('img/gif', 'R0lGODlhAQABAIABAP///wAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==');
     var memberId = m.memberId();
 
     // Returns HTML file
