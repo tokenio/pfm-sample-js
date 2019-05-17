@@ -49,7 +49,7 @@ function createButton(buttonType) {
 
     // create the button
     button = token.createTokenButton(element, {
-        label: 'Redirect Token Access',
+        label: 'Token Access',
     });
 
     // create TokenController to handle messages
