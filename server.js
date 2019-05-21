@@ -61,18 +61,19 @@ async function initServer() {
         var member = Token.getMember(Token.MemoryCryptoEngine, memberId);
         var nonce = Token.Util.generateNonce();
         req.session.nonce = nonce;
+        var redirectUrl = req.protocol + '://' + req.get('host') + '/fetch-balances-redirect';
 
         // set up the AccessTokenRequest
         var tokenRequest = Token.createAccessTokenRequest(req.body.resources)
             .setToAlias(alias)
             .setToMemberId(memberId)
-            .setRedirectUrl('http://localhost:3000/fetch-balances-redirect')
+            .setRedirectUrl(redirectUrl)
             .setCSRFToken(nonce);
         // store the token request
         member.storeTokenRequest(tokenRequest).then(function(request) {
             var requestId = request.id;
-            var redirectUrl = Token.generateTokenRequestUrl(requestId);
-            res.status(200).send(redirectUrl);
+            var tokenRequestUrl = Token.generateTokenRequestUrl(requestId);
+            res.status(200).send(tokenRequestUrl);
         });
     });
 
