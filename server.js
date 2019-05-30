@@ -61,7 +61,7 @@ async function init() {
             displayNameFirst: 'Demo Data Aggregator',
         });
 
-        await member.setProfilePicture('image/png', fs.readFileSync('southside.png'))
+        await member.setProfilePicture('image/png', fs.readFileSync('finvertex.png'))
     }
 
     // launch server
