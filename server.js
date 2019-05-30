@@ -60,7 +60,8 @@ async function init() {
             // The Token UI shows this (and the alias) to the user when requesting access.
             displayNameFirst: 'Demo Data Aggregator',
         });
-        await member.setProfilePicture('img/gif', 'R0lGODlhAQABAIABAP///wAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==');
+
+        await member.setProfilePicture('image/png', fs.readFileSync('southside.png'))
     }
 
     // launch server
